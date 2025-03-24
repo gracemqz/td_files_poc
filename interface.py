@@ -9,7 +9,8 @@ def main():
     )
 
     # Custom CSS for buttons
-    st.markdown("""
+    st.markdown(
+        """
         <style>
         .stButton button {
             background-color: #006BB8;
@@ -22,7 +23,9 @@ def main():
             color: white !important;
         }
         </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     st.title("🗂 Employee Tax Forms Assistant")
 
@@ -69,8 +72,8 @@ def main():
         with col1:
             st.info(f"{len(uploaded_files)} file(s) selected")
 
-        if st.button("Analyze the Forms", type="primary", use_container_width=True):
-            with st.spinner("Analyzing the forms..."):
+        if st.button("Process Form", type="primary", use_container_width=True):
+            with st.spinner("Processing the form..."):
                 try:
                     # Initialize Google Cloud services with provided credentials
                     storage_client, model = init_google_cloud(
@@ -97,7 +100,7 @@ def main():
                     results = process_multiple_pdfs(gcs_urls, model)
 
                     # Display results
-                    st.subheader("Output")
+                    st.subheader("Analysis")
                     st.markdown(results)
 
                 except Exception as e:
