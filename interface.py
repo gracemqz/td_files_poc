@@ -13,14 +13,20 @@ def main():
         """
         <style>
         .stButton button {
-            background-color: #006BB8;
-            border-color: #006BB8;
+            background-color: #006BB8 !important;
+            border-color: #006BB8 !important;
             color: white !important;
         }
         .stButton button:hover {
-            background-color: #005a9e;
-            border-color: #005a9e;
+            background-color: #005a9e !important;
+            border-color: #005a9e !important;
             color: white !important;
+        }
+        .stButton button:active, .stButton button:focus {
+            background-color: #006BB8 !important;
+            border-color: #006BB8 !important;
+            color: white !important;
+            box-shadow: none !important;
         }
         </style>
     """,
