@@ -8,6 +8,22 @@ def main():
         page_title="Employee Tax Forms Assistant", page_icon="🗂", layout="wide"
     )
 
+    # Custom CSS for buttons
+    st.markdown("""
+        <style>
+        .stButton button {
+            background-color: #006BB8;
+            border-color: #006BB8;
+            color: white !important;
+        }
+        .stButton button:hover {
+            background-color: #005a9e;
+            border-color: #005a9e;
+            color: white !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     st.title("🗂 Employee Tax Forms Assistant")
 
     # Add credentials input
