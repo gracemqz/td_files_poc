@@ -13,6 +13,11 @@ GOOGLE_CLOUD_BUCKET_NAME = "source_to_jira_bucket"
 GOOGLE_CLOUD_LOCATION = "us-central1"
 
 
+DEFAULT_PROMPT = """You are a payroll administrator. Step 1:Parse the pdf file(s) and list all the fields in the form with the values input by the employee for that field. Double check and make sure the values are parsed correctly, and are matched with the correct field, don't miss any value and do not mismatch any value with the incorrect field. Output in a table format. Note: Also include all fields and checkboxes (even if they are blank) with the values in the checkboxes (if there's a tick or not).
+        Step 2: Check if the amounts entered from line 1 to the last line before the "total claim amount" line sum up to the "total claim amount".
+        Step 3: List whether this a federal or provincial form, if it's a federal form, list for which country it is applicable for; if it's a provincial form, list for which province or state that it is applicable for. Also, list the year it is for."""
+
+
 def init_google_cloud(credentials_json):
     """Initialize Google Cloud services with provided credentials."""
     try:
@@ -66,15 +71,11 @@ def upload_to_gcs(file_content, storage_client, bucket_name=GOOGLE_CLOUD_BUCKET_
         raise Exception(f"Error uploading to GCS: {str(e)}")
 
 
-def process_pdf_with_gemini(file_url, model):
+def process_pdf_with_gemini(file_url, model, prompt=DEFAULT_PROMPT):
     """Process a single PDF with Gemini model."""
     try:
         # Create a PDF part from the GCS URL
         pdf_part = Part.from_uri(file_url, mime_type="application/pdf")
-
-        prompt = """You are a payroll administrator. Step 1:Parse the pdf file(s) and list all the fields in the form with the values input by the employee for that field. Double check and make sure the values are parsed correctly, and are matched with the correct field, don't miss any value and do not mismatch any value with the incorrect field. Output in a table format. Note: Also include all fields and checkboxes (even if they are blank) with the values in the checkboxes (if there's a tick or not).
-        Step 2: Check if the amounts entered from line 1 to the last line before the "total claim amount" line sum up to the "total claim amount".
-        Step 3: List whether this a federal or provincial form, if it's a federal form, list for which country it is applicable for; if it's a provincial form, list for which province or state that it is applicable for. Also, list the year it is for."""
 
         # Generate content with safety settings
         response = model.generate_content(
@@ -92,12 +93,12 @@ def process_pdf_with_gemini(file_url, model):
         raise Exception(f"Error processing PDF with Gemini: {str(e)}")
 
 
-def process_multiple_pdfs(gcs_urls, model):
+def process_multiple_pdfs(gcs_urls, model, prompt=DEFAULT_PROMPT):
     """Process multiple PDFs and combine their results."""
     results = []
     for url in gcs_urls:
         try:
-            result = process_pdf_with_gemini(url, model)
+            result = process_pdf_with_gemini(url, model, prompt)
             results.append(result)
         except Exception as e:
             results.append(f"Error processing file {url}: {str(e)}")

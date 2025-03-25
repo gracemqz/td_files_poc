@@ -1,12 +1,62 @@
-import streamlit as st
 import json
-from generation import upload_to_gcs, process_multiple_pdfs, init_google_cloud
+
+import streamlit as st
+
+from generation import (
+    DEFAULT_PROMPT,
+    init_google_cloud,
+    process_multiple_pdfs,
+    upload_to_gcs,
+)
+
+
+@st.dialog("Google Cloud and Vertex AI Credentials")
+def show_credentials_dialog():
+    credentials_text = st.text_area(
+        "Paste your Google Cloud and Vertex AI credentials (JSON) here",
+        height=200,
+        help="This should be a JSON file containing your Google Cloud and Vertex AI credentials",
+    )
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Load Credentials", use_container_width=True, type="primary"):
+            if credentials_text:
+                try:
+                    credentials_json = json.loads(credentials_text)
+                    st.session_state.credentials = credentials_json
+                    st.session_state.credentials_provided = True
+                    st.rerun()
+                except json.JSONDecodeError:
+                    st.error("Invalid JSON format. Please check your credentials.")
+                    st.session_state.credentials_provided = False
+    with col2:
+        if st.button("Cancel", use_container_width=True):
+            st.rerun()
+
+
+@st.dialog("Modify Analysis Prompt")
+def show_prompt_dialog():
+    if "custom_prompt" not in st.session_state:
+        st.session_state.custom_prompt = DEFAULT_PROMPT
+
+    modified_prompt = st.text_area(
+        "Customize the analysis prompt",
+        value=st.session_state.custom_prompt,
+        height=200,
+        help="Modify the prompt that will be used to analyze the PDF files",
+    )
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Update Prompt", use_container_width=True, type="primary"):
+            st.session_state.custom_prompt = modified_prompt
+            st.rerun()
+    with col2:
+        if st.button("Cancel", use_container_width=True):
+            st.rerun()
 
 
 def main():
-    st.set_page_config(
-        page_title="Employee Tax Forms Assistant", page_icon="🗂", layout="wide"
-    )
+    st.set_page_config(page_title="Employee Tax Forms Assistant", page_icon="🗂")
 
     # Custom CSS for buttons
     st.markdown(
@@ -35,32 +85,18 @@ def main():
 
     st.title("🗂 Employee Tax Forms Assistant")
 
-    # Add credentials input
-    with st.expander(
-        "Google Cloud and Vertex AI Credentials",
-        expanded=not st.session_state.get("credentials_provided", False),
-    ):
-        credentials_text = st.text_area(
-            "Paste your Google Cloud and Vertex AI credentials (JSON) here",
-            height=200,
-            help="This should be a JSON file containing your Google Cloud and Vertex AI credentials",
-        )
+    # Dialog toggle buttons
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Configure Credentials", use_container_width=True):
+            show_credentials_dialog()
+    with col2:
+        if st.button("Modify Analysis Prompt", use_container_width=True):
+            show_prompt_dialog()
 
-        # Add Load Credentials button
-        if st.button("Load Credentials", key="load_credentials"):
-            if credentials_text:
-                try:
-                    credentials_json = json.loads(credentials_text)
-                    st.success("Credentials loaded successfully")
-                    st.session_state.credentials = credentials_json
-                    st.session_state.credentials_provided = True
-                except json.JSONDecodeError:
-                    st.error("Invalid JSON format. Please check your credentials.")
-                    st.session_state.credentials_provided = False
-            else:
-                st.warning("Please paste your credentials before loading.")
-
-    if not st.session_state.get("credentials_provided"):
+    # Show credentials dialog automatically if not provided
+    if not st.session_state.get("credentials_provided", False):
+        show_credentials_dialog()
         st.warning(
             "Please provide your Google Cloud and Vertex AI credentials to continue."
         )
@@ -73,11 +109,6 @@ def main():
     )
 
     if uploaded_files:
-        col1, col2 = st.columns([1, 2])
-
-        with col1:
-            st.info(f"{len(uploaded_files)} file(s) selected")
-
         if st.button("Process Form", type="primary", use_container_width=True):
             with st.spinner("Processing the form..."):
                 try:
@@ -87,23 +118,15 @@ def main():
                     )
 
                     # Upload files to GCS and get URLs
-                    progress_bar = st.progress(0)
                     gcs_urls = []
-
-                    for i, pdf_file in enumerate(uploaded_files):
-                        with st.status(
-                            f"Uploading {pdf_file.name}...", expanded=False
-                        ) as status:
-                            gcs_url = upload_to_gcs(pdf_file, storage_client)
-                            gcs_urls.append(gcs_url)
-                            progress = (i + 1) / len(uploaded_files)
-                            progress_bar.progress(progress)
-                            status.update(
-                                label=f"Uploaded {pdf_file.name}", state="complete"
-                            )
+                    for pdf_file in uploaded_files:
+                        gcs_url = upload_to_gcs(pdf_file, storage_client)
+                        gcs_urls.append(gcs_url)
 
                     # Process PDFs with Gemini
-                    results = process_multiple_pdfs(gcs_urls, model)
+                    results = process_multiple_pdfs(
+                        gcs_urls, model, st.session_state.custom_prompt
+                    )
 
                     # Display results
                     st.subheader("Analysis")
