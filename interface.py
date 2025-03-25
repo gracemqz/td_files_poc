@@ -10,30 +10,6 @@ from generation import (
 )
 
 
-@st.dialog("Google Cloud and Vertex AI Credentials")
-def show_credentials_dialog():
-    credentials_text = st.text_area(
-        "Paste your Google Cloud and Vertex AI credentials (JSON) here",
-        height=200,
-        help="This should be a JSON file containing your Google Cloud and Vertex AI credentials",
-    )
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Load Credentials", use_container_width=True, type="primary"):
-            if credentials_text:
-                try:
-                    credentials_json = json.loads(credentials_text)
-                    st.session_state.credentials = credentials_json
-                    st.session_state.credentials_provided = True
-                    st.rerun()
-                except json.JSONDecodeError:
-                    st.error("Invalid JSON format. Please check your credentials.")
-                    st.session_state.credentials_provided = False
-    with col2:
-        if st.button("Cancel", use_container_width=True):
-            st.rerun()
-
-
 @st.dialog("Modify Prompt")
 def show_prompt_dialog():
     if "custom_prompt" not in st.session_state:
@@ -85,22 +61,20 @@ def main():
 
     st.title("🗂 Employee Tax Forms Assistant")
 
-    # Dialog toggle buttons
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Configure Credentials", use_container_width=True):
-            show_credentials_dialog()
-    with col2:
-        if st.button("Modify Prompt", use_container_width=True):
-            show_prompt_dialog()
+    # Initialize credentials from secrets
+    if "credentials" not in st.session_state:
+        try:
+            credentials_json = json.loads(st.secrets["google_credentials"])
+            st.session_state.credentials = credentials_json
+            st.session_state.credentials_provided = True
+        except Exception as e:
+            st.error(f"Error loading credentials from secrets: {str(e)}")
+            st.session_state.credentials_provided = False
+            return
 
-    # Show credentials dialog automatically if not provided
-    if not st.session_state.get("credentials_provided", False):
-        show_credentials_dialog()
-        st.warning(
-            "Please provide your Google Cloud and Vertex AI credentials to continue."
-        )
-        return
+    # Dialog toggle button for prompt
+    if st.button("Modify Prompt", use_container_width=True):
+        show_prompt_dialog()
 
     uploaded_files = st.file_uploader(
         "Upload PDF files",
