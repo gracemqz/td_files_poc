@@ -34,7 +34,7 @@ def show_credentials_dialog():
             st.rerun()
 
 
-@st.dialog("Modify Analysis Prompt")
+@st.dialog("Modify Prompt")
 def show_prompt_dialog():
     if "custom_prompt" not in st.session_state:
         st.session_state.custom_prompt = DEFAULT_PROMPT
@@ -91,7 +91,7 @@ def main():
         if st.button("Configure Credentials", use_container_width=True):
             show_credentials_dialog()
     with col2:
-        if st.button("Modify Analysis Prompt", use_container_width=True):
+        if st.button("Modify Prompt", use_container_width=True):
             show_prompt_dialog()
 
     # Show credentials dialog automatically if not provided
