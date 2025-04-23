@@ -39,7 +39,7 @@ def init_google_cloud(credentials_json):
         )
 
         # Initialize Gemini model
-        model = GenerativeModel("gemini-2.0-pro-exp-02-05")
+        model = GenerativeModel("gemini-2.0-flash-001")
 
         return storage_client, model
     except Exception as e:
